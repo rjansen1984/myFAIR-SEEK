@@ -1,0 +1,20 @@
+{% extends "base.html" %} {% load staticfiles %} {% block content %}
+<script>
+    window.onload = function () {
+        document.forms['store'].submit()
+    }
+</script>
+<form action="{% url 'store' %}" method="post" id="store" name="store">
+    <input type="hidden" name="inv" id="inv" value="{{ inv }}">
+    <input type="hidden" name="study" id="study" value="{{ study }}">
+    <input type="hidden" name="metadata" id="metadata" value="{{ metadata }}">
+    <input type="hidden" name="datafile" id="datafile" value="{{ datafiles }}">
+    <input type="hidden" name="disgenet" id="disgenet" value="{{ disgenet }}">
+    <input type="hidden" name="edam" id="edam" value="{{ edam }}">
+</form>
+<div id="store" style="text-align:center">
+    <h3>Triples are being stored...Please wait.</h3>
+    <br>
+    <img id="storeImage" src="{% static 'img/wait.gif' %}" width="50%" height="50%">
+</div>
+{% endblock %}

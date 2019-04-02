@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block head %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript">
+    function myFunction() {
+        var x = document.getElementById("wrapper");
+        var button = document.getElementById("showresults");
+        $("#wrapper").slideToggle('slow');
+        if (button.textContent === "Show Results") {
+            button.textContent = "Hide Results";
+        } else {
+            button.textContent = "Show Results";
+        }
+    }
+</script>
+{% endblock %}
+{% block style %}
+<link href="{% static 'css/output.css' %}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="navbar-header">
+    <div class="container">
+        <div id="menu">
+            <ul id="menubar">
+                    <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
+                    {% if storagetype == "SEEK" %}
+                        <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
+                    {% else %}
+                        <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                        <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                    {% endif %}
+                    <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="container" style="margin-top:100px"></div>
+<div id="title">
+    <h2>{{resultid}}</h2>
+</div>
+<br />
+<div id="wrapper" style="display:none;">
+    <div class="resultDiv" id="input" style="overflow-x:auto;">
+        <h3>Input Files</h3>
+        <p>
+            <table class="tblresult" id="input-files">
+                <span id="input-list" style="display: none;">
+                    {% for key, value in inputs.items %}
+                        {{value}}<br>
+                    {% endfor %}
+                </span>
+                <th>Filename</th>
+                <th>
+                    View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                    <br />
+                    or
+                    <br />
+                    Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                    <br />
+                </th>
+                {% for inputid, input in inputs.items %}
+                    <tr>
+                        <td>{{input}}</td>
+                        <td style="text-align:center;">
+                            {% if storagetype == "SEEK" %}
+                                <a href="{{storage}}/data_files/{{inputid}}" target="_blank">
+                                    <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                                <a href="{{storage}}/data_files/{{inputid}}/download" target="_blank">
+                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                            {% else %}
+                                <a href="{{storage}}/{{resultid}}/{{input}}">
+                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </p>
+    </div>
+    <div class="resultDiv" id="analysis" style="overflow-x:auto;">
+        <h3>Analysis Details</h3>
+        <p>
+            <table class="tblresult" id="analysis-info">
+                <th>Galaxy file</th>
+                <th>Galaxy workflow ID</th>
+                <th>
+                    View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                    <br />
+                    or
+                    <br />
+                    Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                    <br />
+                </th>
+                {% if outputs %}
+                    {% for outid, outname in outputs.items %}
+                        {% if ".ga" in outname %}
+                            <tr>
+                                <td>{{outname}}</td>
+                                <td id="workflowid">{{workflowid}}</td>
+                                <td style="text-align:center;">
+                                    {% if storagetype == "SEEK" %}
+                                        <span id="ga" style="display: none">{{storage}}/data_files/{{outid}}</span>
+                                        <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                            <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                        </a>
+                                        <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                            <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                        </a>
+                                    {% else %}
+                                        <span id="ga" style="display: none">{{storage}}/{{resultid}}/{{outname}}</span>
+                                        <a href="{{storage}}/{{resultid}}/{{outname}}">
+                                            <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                        {% if ".tar" in output %}
+                        <tr>
+                            <td id="tar">{{output}}</td>
+                            <td>&nbsp;</td>
+                            <td><button class="button" name="rerun" onclick="import_history()">Import History</button></td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>No workflow used.</td>
+                        <td id="workflowid">{{workflowid}}</td>
+                    </tr>
+                {% endif %}
+            </table>
+            <table class="tblresult" id="analysis-info">
+                <th>Galaxy workflow steps</th>
+                {% if workflow %}
+                    {% for step in workflow %}
+                        <tr>
+                            {% if step.label != None %}
+                                <td>{{step.name}} -- {{step.label}}</td>
+                            {% else %}
+                                <td>{{step.name}}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td>No workflow used.</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </p>
+    </div>
+    <h3>Output</h3>
+    <p>
+    <table class="tblresult" id="output-files" style="width: 100%">
+        <th>Filename</th>
+        <th style="width: 10%;">
+            View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+            <br />
+            or
+            <br />
+            Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+            <br />
+        </th>
+        {% if outputs  %}
+            {% for outid, outname in outputs.items %}
+                {% if ".ga" not in outname %}
+                    <tr>
+                        <td>
+                            {{outname}} 
+                            <!-- <br>
+                            {% for plotname, plotdiv in plots.items %}
+                                {% if outname in plotname %}
+                                    <div id="plotdiv">
+                                        {{ plotdiv|safe }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %} -->
+                        </td>
+                        <td style="text-align:center;">
+                            {% if storagetype == "SEEK" %}
+                                <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                    <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                                <a href="{{storage}}/data_files/{{outid}}/download" target="_blank">
+                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                            {% else %}
+                                <a href="{{storage}}/{{resultid}}/{{outname}}">
+                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <tr><td>No output files.</td></tr>
+        {% endif %}
+    </table>
+    </p>
+    <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
+        <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">Rerun
+    </button>
+    <br>
+    <br>
+</div>
+<br />
+<div id="resultsbutton">
+    <button id="showresults" class="button" onclick="myFunction()">Show Results</button>
+</div>
+<div id="running" style="display: none" align="center">
+    <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="500" height="250">
+    <p style="text-align:center;">
+        Please wait...See Galaxy page for more details.
+    </p>
+</div>
+<div id="finished" style="display:none" align="center">
+    <img id="checkImage" src="{% static 'img/check.png' %}" width="256" height="256">
+    <p style="text-align:center">
+        Finished uploading data files.<br>
+        Please check the Galaxy page for more details.
+    </p>
+</div>
+<div id="error" style="display:none" align="center">
+    <img id="errorImage" src="{% static 'img/error.png' %}" width="273.5" height="273.5">
+    <br />
+    <p style="text-align:center;">
+        Oops...Something went wrong.<br>
+        Wait a few seconds or reload the page to try again.
+    </p>
+</div>
+</div>
+{% endblock %}

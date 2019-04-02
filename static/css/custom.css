@@ -1,0 +1,464 @@
+/*!
+ * Start Bootstrap - Logo Nav HTML Template (http://startbootstrap.com)
+ * Code licensed under the Apache License v2.0.
+ * For details, see http://www.apache.org/licenses/LICENSE-2.0.
+ */
+
+@media(min-width:768px) {
+    body {
+        font-size: 9pt;
+        height: auto;
+    }
+}
+
+input[type="checkbox"]:checked+label::after {
+    content: '';
+    position: absolute;
+    width: 1.9ex;
+    height: 1ex;
+    background: rgba(0, 0, 0, 0);
+    top: 0.7ex;
+    left: 0.5ex;
+    border: 2px solid #21317f;
+    border-top: none;
+    border-right: none;
+    -webkit-transform: rotate(-45deg);
+    -moz-transform: rotate(-45deg);
+    -o-transform: rotate(-45deg);
+    -ms-transform: rotate(-45deg);
+    transform: rotate(-45deg);
+}
+
+input[type="checkbox"] {
+    line-height: 2.1ex;
+    position: absolute;
+    left: -999em;
+}
+
+input[type="checkbox"]+label {
+    color: #21317f;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+input[type="checkbox"]+label::before {
+    content: "";
+    display: inline-block;
+    vertical-align: -25%;
+    height: 2.75ex;
+    width: 2.75ex;
+    background-color: #e7f3ff;
+    color: #21317f;
+    border: 1px solid #21317f;
+    margin-right: 0.5em;
+}
+
+.navbar-header {
+    position: fixed;
+    top: 0;
+    margin: auto;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    background-color: #e7f3ff;
+    width: 100%;
+    height: auto;
+    border-top: 3px solid #21317f;
+    border-bottom: 1px solid #21317f;
+}
+
+.menu-text {
+    text-align: center;
+    font-size: 10pt;
+    font-weight: bold;
+    padding: 10px;
+    height: 100%;
+}
+
+#menu {
+    float: left;
+    text-align: center;
+    margin: 5px;
+    margin-bottom: 0;
+}
+
+#menubar {
+    width: 100%;
+    list-style-type: none;
+    margin: 0;
+    padding: 10px;
+    height: 100%;
+}
+
+#menubar li {
+    height: 100%;
+    display: inline-block;
+}
+
+#menu a:hover {
+    font-weight: bold;
+    color: #21317f;
+    text-decoration: none;
+}
+
+#menu a {
+    color: #337ab7;
+}
+
+.info {
+    margin-bottom: 10px;
+}
+
+body select {
+    height: 30px;
+    background-color: #fff;
+    border: 3px solid #e7f3ff;
+    color: #21317f;
+}
+
+.table {
+    width: 100%;
+    table-layout: fixed;
+    font-size: 8pt;
+    box-sizing: none;
+    word-wrap: normal;
+}
+
+.table a {
+    cursor: pointer;
+}
+
+.table td {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+#table-login th {
+    padding: 15px 32px;
+    background-color: #e7f3ff;
+    border: none;
+}
+
+#tbl-files {
+    border: 3px solid #e7f3ff;
+}
+
+#tbl-files tr:nth-child(odd) {
+    background-color: #fafafa;
+}
+
+#tbl-files th {
+    padding: 10px;
+    background-color: #e7f3ff;
+}
+
+#tbl-files td {
+    padding: 5px;
+}
+
+.btn-process {
+    color: #fff;
+    border-color: #e7f3ff;
+    background-color: #21317f;
+    outline-color: #e7f3ff;
+}
+
+.btn-process:hover,
+.btn-process:focus,
+.btn-process:active,
+.btn-process.active,
+.open .dropdown-toggle.btn-process {
+    color: #333;
+    border-color: #21317f;
+    background-color: #e7f3ff;
+    outline-color: #21317f;
+}
+
+.btn-process:active,
+.btn-process.active,
+.open .dropdown-toggle.btn-process {
+    background-image: none;
+}
+
+.btn-process.disabled,
+.btn-process[disabled],
+fieldset[disabled] .btn-process,
+.btn-process.disabled:hover,
+.btn-process[disabled]:hover,
+fieldset[disabled] .btn-process:hover,
+.btn-process.disabled:focus,
+.btn-process[disabled]:focus,
+fieldset[disabled] .btn-process:focus,
+.btn-process.disabled:active,
+.btn-process[disabled]:active,
+fieldset[disabled] .btn-process:active,
+.btn-process.disabled.active,
+.btn-process[disabled].active,
+fieldset[disabled] .btn-process.active {
+    color: #333;
+    border-color: #21317f;
+    background-color: #e7f3ff;
+}
+
+#select,
+#show_results {
+    width: 100%;
+    text-align: center;
+}
+
+.select-workflow {
+    font-size: 10pt;
+    min-width: 50%;
+    max-width: 50%;
+    outline-color: #21317f;
+}
+
+.select-folder {
+    font-size: 10pt;
+    min-width: 25%;
+    max-width: 100%;
+    outline-color: #21317f;
+}
+
+.select-option {
+    font-size: 10pt;
+    min-width: 10%;
+    max-width: 25%;
+    outline-color: #21317f;
+}
+
+.select-folder optgroup {
+    font-size: 10pt;
+    outline-color: #21317f;
+}
+
+/*
+Dropdown menu custom arrows
+Start
+*/
+
+body select {
+    border: 1px solid #e7f3ff;
+    color: #21317F !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 20px;
+    background-image: url('../img/dropdown.png');
+    background-position: calc(100% - 5px) calc(50%);
+    background-size: 10px;
+    background-repeat: no-repeat;
+}
+
+body select:hover {
+    border: 1px solid #21317f;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+}
+
+body select:focus {
+    color: #21317F;
+    color: transparent;
+    text-shadow: 0 0 0 #21317f;
+}
+
+/*
+Dropdown menu custom arrows
+End
+*/
+
+#login input[type=text],
+#login input[type=password],
+#login select {
+    margin: 10px;
+}
+
+input[type=text],
+input[type=password] {
+    width: 99%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    margin: 3px;
+}
+
+input[type=text]:focus,
+input[type=password]:focus,
+textarea:focus {
+    border: 1px solid #21317f;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+}
+
+#index_buttons {
+    height: 30px;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #e7f3ff;
+    padding: 2px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 9pt;
+    cursor: pointer;
+    outline-color: #21317f;
+}
+
+#index_buttons:hover {
+    border: 1px solid #21317f;
+    outline: 0;
+    -webkit-box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 12px rgba(102, 175, 233, .6);
+    box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 12px rgba(102, 175, 233, .6);
+}
+
+#index_buttons:active {
+    background-color: #fff;
+    border: 1px solid #e7f3ff;
+    color: #333;
+    outline-color: #21317f;
+}
+
+#login {
+    width: 30%;
+    top: 0;
+    margin: 0 auto;
+    position: relative;
+    float: none;
+    background-color: #fff;
+    padding: 50px;
+    font-size: 9pt;
+    text-align: center;
+}
+
+#login table {
+    margin: 0 auto;
+    color: #21317f;
+}
+
+#login th {
+    padding-right: 3em;
+}
+
+#modify {
+    width: 40%;
+    top: 8%;
+    margin: 0 auto;
+    position: relative;
+    background-color: #fff;
+    color: #333;
+    float: none;
+    padding: 10px;
+    text-align: center;
+}
+
+#modify table {
+    text-align: left;
+    color: #21317f;
+    width: 100%;
+}
+
+#modify th {
+    padding-right: 3em;
+}
+
+#modify td {
+    width: 100%;
+}
+
+#help {
+    float: left;
+    margin-left: 20px;
+}
+
+#loading p {
+    color: #21317f;
+    font-size: 100%;
+}
+
+#finished p {
+    color: #21317f;
+    font-size: 100%;
+}
+
+#results {
+    float: left;
+    width: 100%;
+    margin-top: 20px;
+}
+
+#errorPanel {
+    float: left;
+    width: 98%;
+    margin-top: 20px;
+}
+
+#searchDataList {
+    display: none;
+}
+
+#results_table {
+    margin: 0;
+    min-width: 50%;
+    max-width: 100%;
+}
+
+#search-panel {
+    margin-top: 25px;
+}
+
+#process {
+    outline-color: #21317f;
+}
+
+/*
+Sticky footer styles
+*/
+
+html,
+body {
+    height: 100%;
+    /* The html and body elements cannot have any padding or margin. */
+}
+
+/* Wrapper for page content to push down footer */
+
+#wrap {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    /* Negative indent footer by it's height */
+    margin: 0 auto -60px;
+}
+
+/* Set the fixed height of the footer here */
+
+#push,
+#footer {
+    clear: both;
+    padding: 0;
+    vertical-align: middle;
+    line-height: normal;
+    margin: 0;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+}
+
+#footer {
+    background-color: #e7f3ff;
+    border-top: 1px solid #21317f;
+    color: #337ab7;
+}
+
+/* Lastly, apply responsive CSS fixes as necessary */
+
+@media (max-width: 767px) {
+    #footer {
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}

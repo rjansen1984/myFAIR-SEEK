@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block head %}
+<script type="text/javascript" charset="utf-8">
+    function GetInvestigations() {
+        document.forms['seek-data-upload'].submit()
+    }
+    function UploadSeek() {
+        document.getElementById('loading').style.display = "block";
+        document.forms['seek-data-upload'].submit()
+    }
+    function Edam() {
+        var wn = document.getElementById('edam-browser').contentWindow;
+        wn.postMessage('Hello to iframe from parent!', 'http://127.0.0.1:20080/');
+        if ( window.addEventListener ) {
+            window.addEventListener('message', handleMessage, false);
+        } else if ( window.attachEvent ) { // ie8
+            window.attachEvent('onmessage', handleMessage);
+        }
+        function handleMessage(e) {
+            var el = document.getElementById('res');
+            if ( e.origin === 'http://127.0.0.1:20080') {
+                el.value = e.data;
+                document.getElementById('isselected').style.display = "block";
+                e.source.postMessage('Message received', e.origin);
+            }
+        }
+        
+        setTimeout(seekCreate, 2000);
+    }
+    function seekCreate()
+    {
+        document.getElementById('loading').style.display = "block";
+        document.forms['seek-data-upload'].submit()
+    }
+    function AddEdam() {
+        var e = document.getElementById("edamresult");
+        var eselect = e.options[e.selectedIndex].value;
+        document.getElementById('hiddenedam').innerHTML = eselect;
+    }
+</script>
+{% endblock %}
+{% block content %}
+<div class="navbar-header">
+    <div class="container">
+        <div id="menu">
+            <ul id="menubar">
+                <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
+                {% if storagetype == "SEEK" %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
+                {% else %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                    <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                {% endif %}
+                <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="container" style="margin-top:100px;">
+    {% if err %}
+        {{err}}
+    {% endif %}
+    <form action="{% url 'seek' %}" method="POST" name="seek-data-upload" enctype=multipart/form-data >
+        <table id="tbl-files" width="100%" style="margin-bottom:150px;">
+            <thead>
+                <th style="text-align:center;">SEEK Upload Form</th>
+            </thead>
+            <tr>
+                <td>
+                    <b><i>Enter you first name and last name: </i></b>
+                    <br>
+                    <input type="text" id="user" name="user" value="{{fullname}}">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Select a project</i></b>
+                    <br>
+                    <input type="hidden" id="proj-stored" name="proj-stored" value="{{proj|add:","|add:proj_name}}">
+                    <select id="projects" name="projects" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available projects:">
+                            <option id="proj" disabled selected value="{{ proj }}">{{ proj_name }}</option>
+                            {% for pid, project in projects.items %}
+                                <option value="{{ pid|add:","|add:project }}">{{ project }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+            </tr>
+            {% if investigations %}
+            <tr>
+                <td>
+                    <b><i>Select an investigation: </i></b>
+                    <br>
+                    <input type="hidden" id="inv-stored" name="inv-stored" value="{{inv|add:","|add:inv_name}}">
+                    <select id="investigations" name="investigations" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available investiagtions:">
+                            <option id="inv" disabled selected value="{{ inv }}">{{ inv_name }}</option>
+                            {% for iid, investigation in investigations.items %}
+                                <option value="{{ iid|add:","|add:investigation }}">{{ investigation }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+            </tr>
+            {% endif %}
+            {% if studies %}
+            <tr>
+                <td>
+                    <b><i>Select a study: </i></b>
+                    <br>
+                    <input type="hidden" id="stu-stored" name="stu-stored" value="{{stu|add:","|add:stu_name}}">
+                    <select id="studies" name="studies" class="select-folder" onchange="seekCreate()">
+                        <option id="stu" disabled selected value="{{ stu }}">{{ stu_name }}</option>
+                        <optgroup label="available studies:">
+                            {% for sid, study in studies.items %}
+                                <option value="{{ sid|add:","|add:study }}">{{ study }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                    {% if cns == "yes" or assays or as %}
+                        &nbsp;
+                    {% else %}
+                        <input type="checkbox" id="cns" name="cns" onclick="seekCreate()" value="yes">
+                        <label for="cns">create new study?</label>    
+                    {% endif %}
+                </td>
+            </tr>
+            {% if not stu_name and cns == "yes" %}
+            <tr>
+                <td>&nbsp;</td>
+            </tr>
+            <tr>
+                <td style="color: #21317F"><b><i>CREATE A NEW STUDY</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a new study name: </i></b>
+                    <br>
+                    <input type="text" id="newstudy" name="newstudy" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="stitle" name="stitle" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a description</i></b>
+                    <textarea id="sdescription" name="sdescription"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td><button id="index_buttons" onclick="seekCreate()">Create new study</button></td>
+            </tr>
+            {% endif %}
+            {% endif %}
+            {% if assays %}
+            <tr>
+                <td>
+                    <b><i>Select an assay</i></b>
+                    <br>
+                    <input type="hidden" id="as-stored" name="as-stored" value="{{as|add:","|add:as_name}}">
+                    <select id="assays" name="assays" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available assays:">
+                            <option id="as" disabled selected value="{{ as }}">{{ as_name }}</option>
+                            {% for aid, assay in assays.items %}
+                                <option value="{{ aid|add:","|add:assay }}">{{ assay }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                    {% if cna == "yes" or as_name %}
+                        &nbsp;
+                    {% else %}
+                        <input type="checkbox" id="cna" name="cna" onclick="seekCreate()" value="yes">
+                        <label for="cna">create new assay?</label>    
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% if stu_name and not assays or cna == "yes" %}
+            <tr>
+                <td>&nbsp;</td>
+            </tr>
+            <tr>
+                <td style="color: #21317F"><b><i>CREATE A NEW ASSAY</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a new assay name: </i></b>
+                    <input type="text" id="newassay" name="newassay" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="atitle" name="atitle" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a description: </i></b>
+                    <textarea id="adescription" name="adescription"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Select assay type</i></b>
+                    <br>
+                    <select id="assay_type" name="assay_type" class="select-folder">
+                        <option value="http://jermontology.org/ontology/JERMOntology#Experimental_assay_type">Experimental Assay Type</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Fluxomics">--Fluxomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Flux_balance_analysis">----Flux Balance Analysis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Genomics">--Genomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Amplification">----Amplification</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Comparative_genomics">----Comparative Genomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#DNA_sequencing">----DNA Sequencing</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Genome_wide_association">----Genome Wide Association</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Genotyping">----Genotyping</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Metagenomics">----Metagenomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Next_generation_sequencing_analysis">----Next Generation Sequencing Analysis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Primer_design">----Primer Design</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#SNP_detection">----SNP Detection</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Immunoassay">--Immunoassay</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Interactomics">--Interactomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein-protein_interaction_profiling">----Protein-Protein Interaction Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Metabolomics">--Metabolomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Metabolite_profiling">----Metabolite Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Catabolic_response">------Catabolic Response</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Flux_balance_analysis">------Flux Balance Analysis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Glucose_pulse">------Glucose Pulse</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Metabolite_concentration">------Metabolite Concentration</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Extracellular_metabolite_concentration">--------Extracellular Metabolite Concentration</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Intracellular_metabolite_Concentration">--------Intracellular Metabolite Concentration</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Metabonomics">----Metabonomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Organism_or_strain_characterisation">--Organism or Strain Characteristics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#By-product_formation">----By-product Formation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Cell_growth_rate">----Cell Growth Rate</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Cell_growth_optimisation">------Cell Growth Optimisation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Cell_size">----Cell Size</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Cultivation_experiment">----Cultivation Experiment</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Limited_media_growth">----Limited Media Growth</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Substrate_utilization">----Substrate Utilization</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Proteomics">--Proteomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Immune_precipitation">----Immune Precipitation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Post-translational_modification">----Post-translational Modification</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein-protein_interaction">----Protein-protein Interaction</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein_expression_profiling">----Protein Expression Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein_identification">----Protein Identification</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein_purification">------Protein Purification</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein_quantification">----Protein Quantification</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Protein_structural_analysis">----Protein Structural Analysis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Reactomics">--Reactomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Enzymatic_assay">----Enzymatic Assay</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Continuous_enzymatic">------Continuous Enzymatic</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Discontinuous_enzymatic">------Discontinuous Enzymatic</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Genome-scale_enzyme_activity_profiling">----Genome-scale Enzyme Activity Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Single_cell">--Single Cell</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Transcriptomics">--Transcriptomics</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Cell_count">----Cell Count</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Comparative_genomic_hybridization">----Comparative Genomic Hybridization</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Gene_expression_profiling">----Gene Expression Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Transcriptional_profiling">------Transcriptional Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Translational_profiling">------Translational Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Methylation_profiling">----Methylation Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#MicroRNA_profiling">----MicroRNA Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#RNA-seq_profiling">----RNA-seq Profiling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#RNAi">----RNAi</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Tiling_path">----Tiling Path</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Transcriptional_analysis">----Transcriptional Analysis</option>
+                    </select>
+                    <br>
+                    <b><i>Select technology type</i></b>
+                    <br>
+                    <select id="technology_type" name="technology_type" class="select-folder">
+                        <option value="http://jermontology.org/ontology/JERMOntology#Technology_type">Technology Type</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Binding">--Binding</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Surface_plasmon_resonance">----Surface Plasmon Resonance</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#2-hybrid_system">----2-hybrid System</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Chemostat_measurements">--Chemostat Measurement</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Chromatography">--Chromatography</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Affinity_chromatography">----Affinity Chromatography</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Gas_chromatography">----Gas Chromatography</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Gel_filtration">----Gel Filtration</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#HPLC">----HPLC</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#UPLC">----UPLC</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Electrophoresis">--Electrophoresis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Capillary_electrophoresis">----Capillary Electrophoresis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Gel_electrophoresis">----Gel Electrophoresis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#SDS_PAGE">------SDS-PAGE</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#2D_gel_electrophoresis">------2D Gel Electrophoresis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Micro-electrophoresis">----Micro-electrophoresis</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Enzymatic_activity_measurements">--Enzymatic Activity Measurements</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Initial_rate_experiment">----Initial Rate Experiment</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Progressive_curve_experiment">----Progressive Curve Experiment</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Flow_cytometry">--Flow Cytometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#FACS">----FACS</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Imaging">--Imaging</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#FRAP">----FRAP</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Microscopy">----Microscopy</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Electron_scanning_microscopy">------Electron scanning microscopy</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Immunostaining">--Immunostaining</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#ELISA">----ELISA</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Immuno_electron_microscopy">----Immuno Electron Microscopy</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Western_blot">----Western Blot</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Mass_spectrometry">--Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Accelerator_mass_spectrometry">----Accelerator Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Gas_chromatography_mass_spectrometry">----Gas Chromatography Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Inductively_coupled_plasma_mass_spectrometry">----Inductively Coupled Plasma Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Ion_mobility_spectrometry_mass_spectrometry">----Ion Mobility Spectrometry Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Isotope_ratio_mass_spectrometry">----Isotope Ratio Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Liquid_chromatography-tandem_mass_spectrometry">----Liquid Chromatography-tandom Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Liquid_chromatography_mass_spectrometry">----Liquid Chromatography Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#MALDI_TOF">----MALDI-TOF</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Orbitrap_velos">----Orbitrap Velos</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#SELDI_TOF">----SELDI-TOF</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Tandem_mass_spectrometry">----Tandem Mass Spectrometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Mathematical_model_type">--Mathematical Model Type</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Algebraic_equation">----Algebraic Equation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Linear_equation">----Linear Equation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Ordinary_differential_equation">----Ordinary Differential Equation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Partial_differential_equation">----Partial Differential Equation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Microarray">--Microarray</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#ChIP-on-chip">----ChIP-on-chip</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Custom_Array">----Custom Array</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#DNA_Methylation">----DNA Methylation</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Exon_array">----Exon Array</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#SNP_array">----SNP Array</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Small_molecule_microarray">----Small Molecule Microarray</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Tiling_array">----Tiling Array</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#miRNA_microarray">----miRNA Microarray</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Molecule_labelling">--Molecule Labelling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Bait_protein_tagging">----Bait Protein Tagging</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Radioactive_labelling">----Radioactive Labelling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#13C_radiolabelling">------13c radiolabelling</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#PCR">--PCR</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#qPCR">----qPCR</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#qRT-PCR">----qRT-PCR</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Sequencing">--Sequencing</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Chip-Seq">----Chip-seq</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Next_generation_sequencing">----Next generation sequencing</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#RNA-Seq">----Rna-seq</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#16S_rRNA">----16s rrna</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Spectrophotometry">--Spectrophotometry</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#Structural_methods">--Structural Methods</option>
+                        <option value="http://jermontology.org/ontology/JERMOntology#NMR">----NMR</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button id="index_buttons" onclick="seekCreate()">Create new assay</button>
+                </td>
+            </tr>
+            {% endif %}
+            {% if as_name %}
+            <tr>
+                <td><b><i>TAG DisGeNET</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    Find DisGeNET tag: 
+                    <input type="text" id="disgenet" name="disgenet">
+                    <button id="index_buttons" onclick="seekCreate()">Search</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    {% if disgenet or "http" in storeddisgenet %}
+                    <select id="disgenetresult" name="disgenetresult" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available DisGeNET results:">
+                            <option value="{{storeddisgenet}}">{{storeddisgenet}}</option>
+                            {% for uri, disease in disgenet.items %}
+                                <option value="{{ uri }}">{{ disease }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                    {% else %}
+                    &nbsp;
+                    {% endif %}
+                    <input type="hidden" id="stored_disgenet" name="stored_disgenet" value="{{disgenettags}}">
+                </td>
+            </tr>
+            {% endif %}
+            {% if "http" in storeddisgenet %}
+            <tr>
+                <td><b><i>TAG EDAM</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    <iframe id="edam-browser" frameborder="0" height="720" width="1280" src="http://127.0.0.1:20080/#topic_0091"></iframe>
+                    <br>
+                    <div style="float:left;">
+                        {% if "http" in storededam %}
+                            <button id="index_buttons" onclick="Edam(); return false;">Change ontology</button>
+                        {% else %}
+                            <button id="index_buttons" onclick="Edam(); return false;">Select this ontology</button>
+                        {% endif %}
+                    </div>
+                        {% if "http" in storededam %}
+                            <p style="color:rgb(250, 75, 0);font-size:12pt;font-weight:700;text-align: right;">
+                                This ontology will be added to the data file:
+                            </p>
+                            <p style="color:rgb(250, 125, 0);font-size:12pt;font-weight:600;text-align: right;">
+                                <span><a href="{{storededam}}" target="blank">{{edamterm}}</a></span>
+                            </p>
+                        {% endif %}
+                    <div style="float:right;"></div>
+                </td>
+            </tr>
+            <div>
+                <input type="hidden" id="stored_edam" name="stored_edam" value="{{storededam}}">
+                <textarea id="res" name="res" style="visibility:hidden;"></textarea>
+            </div>
+            {% endif %}
+            {% if "http" in storededam %}
+            <tr>
+                <td><b><i>UPLOAD DATA FILE:</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="datatitle" name="datatitle" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a description: </i></b>
+                    <textarea id="description" name="description"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Select file to upload: </i></b>
+                    <input type="file" id="uploadfiles" name="uploadfiles" />
+                </td>
+            </tr>
+    </form>
+        <tr>
+            <td>
+                <button id="index_buttons" onclick="seekCreate()">Upload File</button>
+            </td>
+        </tr>
+    {% endif %}
+    </table>
+</div>
+<div id="loading" style="text-align:center;display:none;float: none;">
+    Checking the server. Please wait...<br>
+    <img id="loadingimg" src="{% static 'img/wait.gif' %}" width="15%" height="15%">
+</div>
+<div id="footer">
+    <div class="container">
+        <br />
+        <br />
+        <p class="muted credit">
+        </p>
+    </div>
+</div>
+{% endblock %}

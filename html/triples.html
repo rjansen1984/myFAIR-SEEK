@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block content %}
+<div class="navbar-header">
+    <div class="container">
+        <div id="menu">
+            <ul id="menubar">
+                    <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
+                    {% if storagetype == "SEEK" %}
+                        <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
+                    {% else %}
+                        <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                        <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                    {% endif %}
+                    <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="container" style="margin-top:100px"></div>
+<div id="modify">
+    <h3>Index your data</h3>
+    <form action="{% url 'investigation' %}" method="post" name="investigation">
+        <p>
+            Select an investigation by clicking on the dropdown menu.<br />
+            Click the See Studies button to view all studies within that investigation.<br />
+        </p>
+        <select id="folder" name="folder" class="select-folder">
+            <optgroup label="available investigations:">
+                <option id="inv" disabled selected value="{{ inv }}">{{ inv }}</option>
+                {% for folder in folders %}
+                    <option value="{{ folder }}">{{ folder }}</option>
+                {% endfor %}
+            </optgroup>
+        </select>
+    </form>
+    <br />
+    <button id="index_buttons" onclick="document.investigation.submit()">See Studies</button>
+    <hr />
+    <form action="{% url 'triples' %}" method="post" name="triples">
+        <input type="hidden" name="inv" id="inv" value="{{inv}}">
+        <input type="hidden" name="sstudy" id="sstudy" value="{{sstudy}}">
+        <p>
+            Select a study by clicking on the dropdown menu.<br />
+            Click on the See Files button to view all files within that study. <br />
+        </p>
+        <select id="study" name="study" class="select-folder">
+            <optgroup label="available studies:">
+                {% if inv and not sstudy%}
+                    <option disabled selected value="">Select a study</option>
+                {% elif sstudy %}
+                    <option disabled selected value="{{ sstudy }}">{{ sstudy }}</option>
+                {% endif %}
+                {% if studies is not None and studies != "" %}
+                    {% for study in studies %}
+                        <option value="{{ study }}">{{ study }}</option>
+                    {% endfor %}
+                {% endif %}
+            </optgroup>
+        </select>
+    </form>
+    <br />
+    <button id="index_buttons" onclick="document.triples.submit()">See Files</button>
+    <hr />
+    <form action="{% url 'triples' %}" method="post" name="files">
+        <input type="hidden" name="selected_folder" value="{{ inv }}">
+        <input type="hidden" name="selected_study" value="{{ sstudy }}">
+        <input type="hidden" id="datalist" name="datalist" value="">
+        <input type="hidden" id="metalist" name="metalist" value="">
+        {% if files != "" and files is not None %}
+            <table id="tbl-files">
+                <thead>
+                <th>Files</th>
+                <th>Data File</th>
+                <th>Metadata File</th>
+                </thead>
+                {% for file in files %}
+                    <tr>
+                        <td>{{ file }}</td>
+                        <td>
+                            <input type="checkbox" name="d" id="d{{file}}" value="{{ file }}">
+                            <label for="d{{file}}"></label>
+                        </td>
+                        <td>
+                            <input type="checkbox" name="m" id="m{{file}}" value="{{ file }}">
+                            <label for="m{{file}}"></label>
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                <tr>
+                    <td>Tag metadata:</td>
+                    <form action="{% url 'ontologies' %}"  method="post" name="searchonto">
+                    <td><input type="text" id="disgenet-tag" name="disgenet-tag" style="width:auto;" placeholder="Disease"></td>
+                    <td>
+                        <select id="edam-tag" name="edam-tag" class="select-folder">
+                            <optgroup label="EDAM entries:">
+                                <option value="Gene expression matrix">Gene expression matrix</option>
+                                <option value="RNA-seq read count analysis">RNA-seq read count analysis</option>
+                            </optgroup>
+                        </select>
+                    </form>
+                    </td>
+                </tr>
+            </table>
+            <script type="text/javascript" charset="utf-8">
+                function AddPostData() {
+                    var datafilelist = new Array;
+                    var metafilelist = new Array;
+                    $("input:checkbox[name=d]:checked").each(function(){
+                        datafilelist.push($(this).val());
+                    });
+                    $("input:checkbox[name=m]:checked").each(function(){
+                        metafilelist.push($(this).val());
+                    });
+                    var datalist = JSON.stringify(datafilelist);
+                    var metalist = JSON.stringify(metafilelist);
+                    var formInfo = document.forms['files'];
+                    formInfo.datalist.value = datafilelist
+                    formInfo.metalist.value = metalist
+                }
+            </script>
+            <br />
+            <button id="index_buttons" onclick="AddPostData()">Store Triples</button><br />
+        {% endif %}
+        <br />
+    </form>
+</div>
+<br />
+<div id="footer">
+    <div class="container">
+        <br />
+        <br />
+        <p class="muted credit">
+        </p>
+    </div>
+</div>
+{% endblock %}
