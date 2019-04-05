@@ -321,7 +321,7 @@ function sparqlQuery() {
                 document.getElementById('asearch').value = '';
                 document.getElementById('search-result').value = '';
                 console.log(result);
-                fillTable(result, ['inputa', 'inputb']);
+                fillTable(result);
             },
             error: function (xhr) {
                 alert("An error occured: " + xhr.status + " " +
@@ -330,7 +330,7 @@ function sparqlQuery() {
         });
     }
 }
-function fillTable(result, inputlist) {
+function fillTable(result) {
     $("#infoPanel").addClass('hidden');
     $("#noResultPanel").addClass('hidden');
     $('#process').buttonLoader('stop');
@@ -339,6 +339,7 @@ function fillTable(result, inputlist) {
     var hasResult = false;
     var table = '<thead><tr>'
     table += '<th>select file</th>'
+    table += '<th>collection</th>'
     result.head.vars.forEach(function (entry) {
         if (entry.indexOf("URI") === -1) {
             table += '<th><a>' + entry + '</a></th>'
@@ -354,7 +355,7 @@ function fillTable(result, inputlist) {
         }
         table += '<td><input type="checkbox" name="select" id="' + rownr +
             '" value="' + rownr + '"><label for="' + rownr + '"></label></td>';
-        rownr = rownr + 1;
+        // rownr = rownr + 1;
         result.head.vars.forEach(function (head) {
             if (head.indexOf("URI") === -1 && value[head] !== undefined) {
                 var resource = value[head + "URI"];
@@ -388,9 +389,12 @@ function fillTable(result, inputlist) {
                             displayName.split('/')[3] + '/' +
                             displayName.split('/')[4]
                         )
+                        table += '<td><input type="checkbox" name="collection" id="check_' + rownr +
+                            '" value="' + rownr + '"><label for="check_' + rownr + '"></label></td>';
                         table += '<td><span><a target="_blank" href="' +
                             displayName + '">' + displayName +
                             '</a></span></td>';
+                        rownr = rownr + 1;
                     } else {
                         table += '<td><span>' + displayName + '</span></td>';
                     }
@@ -442,12 +446,6 @@ function fillTable(result, inputlist) {
         document.getElementById('workflow_select').style.display = "block";
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
-            // '<input type="text" id="stepid" name="stepid" ' +
-            // 'style="width:10%;" placeholder="Give step id for galaxy workflow (optional)"/>' +
-            // '&nbsp' +
-            // '<input type="text" id="attr" name="attr" ' +
-            // 'style="width:10%;" placeholder="Give attribute for galaxy workflow (optional)"/>' +
-            // '&nbsp' +
             '<input type="text" id="param" name="param" ' +
             'style="width:10%;" placeholder="Give parameter for galaxy workflow (optional)"/>' +
             '&nbsp<br>' +
@@ -472,12 +470,6 @@ function fillTable(result, inputlist) {
             '<input type="text" id="historyname" name="historyname" ' +
             'style="width:25%;" placeholder="Enter new history name (optional)"/>' +
             '&nbsp <br>' +
-            // '<input type="text" id="toolname" name="toolname" ' +
-            // 'style="width:25%;" placeholder="Give toolname for galaxy workflow (optional)"/>' +
-            // '&nbsp' +
-            // '<input type="text" id="attribute" name="attribute" ' +
-            // 'style="width:25%;" placeholder="Give attribute for galaxy workflow (optional)"/>' +
-            // '&nbsp' +
             '<button id="index_buttons" onclick="postdata(\'group\')">' +
             '<span class="glyphicon glyphicon-forward" aria-hidden="true">' +
             '</span> send to galaxy ' +
@@ -514,6 +506,8 @@ function postdata(g) {
     var workflowid = document.getElementById('workflow').value;
     var selected = new Array;
     var selectout = new Array;
+    var collection = new Array;
+    var collectionlist = new Array;
     var sendmeta = "";
     var col = "";
     if (document.getElementById('sendmeta').checked) {
@@ -539,6 +533,12 @@ function postdata(g) {
     $("input:checkbox[name=select]:checked").each(function () {
         selected.push($(this).val());
     });
+    $("input:checkbox[name=collection]:checked").each(function () {
+        collectionlist.push($(this).val());
+    });
+    for (c = 0; c < collectionlist.length; c++)  {
+        collection.push(getrow(collectionlist[c])[1]);
+    }
     for (s = 0; s < selected.length; s++) {
         dat.push(getrow(selected[s])[0]);
         meta.push(getrow(selected[s])[1]);
@@ -551,14 +551,13 @@ function postdata(g) {
     var jsonMeta = JSON.stringify(meta);
     var jsonGroup = JSON.stringify(group);
     var jsonInvestigation = JSON.stringify(investigation);
+    var jsonCollection = JSON.stringify(collection);
     var data_id = checkData(g);
     var meta_id = checkMeta(g);
     var token = "ygcLQAJkWH2qSfawc39DI9tGxisceVSTgw9h2Diuh0z03QRx9Lgl91gneTok";
     var filetype = document.getElementById('filetype').value;
     var dbkey = document.getElementById('dbkey').value;
     var historyname = document.getElementById('historyname').value;
-    // var stepid = document.getElementById('stepid').value;
-    // var attr = document.getElementById('attr').value;
     var param = document.getElementById('param').value;
     $.ajax({
         type: 'POST',
@@ -570,7 +569,7 @@ function postdata(g) {
             'col': col, 'samples': jsonSamples, 'samplesb': jsonSamplesb,
             'historyname': historyname, 'group': jsonGroup, 'param': param,
             // 'stepid': stepid, 'attr': attr,
-            'investigation': jsonInvestigation
+            'investigation': jsonInvestigation, 'collection': jsonCollection
         },
         success: function (data) {
             if (dat.length <= 0) {
@@ -597,8 +596,8 @@ function postdata(g) {
 // Get selected output information
 function getoutput() {
     var selected = new Array;
-    var group = [];
-    var investigations = [];
+    var group = new Array;
+    var investigations = new Array;
     var resultid = new Array;
     $("input:checkbox[name=select]:checked").each(function () {
         selected.push($(this).val());
@@ -608,15 +607,15 @@ function getoutput() {
         group.push(getrow(selected[s])[2]);
         investigations.push(getrow(selected[s])[3]);
     }
-    var jsonGroup = JSON.stringify(group);
-    var jsonInvestigation = JSON.stringify(investigations);
-    var jsonResultid = JSON.stringify(resultid);
+    // var jsonGroup = JSON.stringify(group);
+    // var jsonInvestigation = JSON.stringify(investigations);
+    // var jsonResultid = JSON.stringify(resultid);
     $.ajax({
         type: 'POST',
         url: "results",
         data: {
-            'group': jsonGroup, 'resultid': jsonResultid,
-            'investigations': jsonInvestigation
+            'group': group, 'resultid': resultid,
+            'investigations': investigations
         },
         success: function (data) {
             window.location.href = "results";
@@ -682,13 +681,13 @@ function getrow(r) {
     var str3 = "";
     var str4 = "";
     var x = document.getElementById(
-        'results_table').rows[r].cells.item(1).innerText;
-    var y = document.getElementById(
         'results_table').rows[r].cells.item(2).innerText;
-    var z = document.getElementById(
-        'results_table').rows[r].cells.item(4).innerText;
-    var i = document.getElementById(
+    var y = document.getElementById(
         'results_table').rows[r].cells.item(3).innerText;
+    var z = document.getElementById(
+        'results_table').rows[r].cells.item(5).innerText;
+    var i = document.getElementById(
+        'results_table').rows[r].cells.item(4).innerText;
     str = str + x;
     str2 = str2 + y;
     str3 = str3 + z;

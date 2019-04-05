@@ -29,10 +29,10 @@ from datetime import datetime, timedelta
 from pytz import timezone
 
 # Testing some Galaxy imports
-from bioblend.galaxy.histories import HistoryClient
-from bioblend.galaxy.tools import ToolClient
-from bioblend.galaxy.workflows import WorkflowClient
-from bioblend.galaxy.datasets import DatasetClient
+# from bioblend.galaxy.histories import HistoryClient
+# from bioblend.galaxy.tools import ToolClient
+# from bioblend.galaxy.workflows import WorkflowClient
+# from bioblend.galaxy.datasets import DatasetClient
 
 
 @csrf_exempt
@@ -1766,7 +1766,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
-        print(file)
         if storagetype == "SEEK":
             get_file_info = ("curl -X GET \"" + file +
                              "\" -H \"accept: application/json\"")
@@ -1777,7 +1776,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                 file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
                 filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
             file_url = file_url.replace('?', '/download?')
-            print(file_url)
             call(["curl -L " + file_url + " -o " +
                   username + "/input_" + filename], shell=True)
         else:
@@ -2052,6 +2050,7 @@ def upload(request):
     param = request.POST.get('param')
     group = request.POST.get('group')
     investigation = request.POST.get('investigation')
+    collection = request.POST.get('collection')
     date = format(datetime.now() + timedelta(hours=2))
     select = selected.split(',')
     mselect = selectedmeta.split(',')
@@ -2127,7 +2126,13 @@ def upload(request):
                     if k in dname:
                         datamap[v] = {'src': "hda", 'id': did}
                 in_count += 1
-            if makecol == "true":
+            if collection != "[]":
+                history_data = gi.histories.show_history(
+                    history_id, contents=True)
+                for c in range(0, len(history_data)):
+                    for col in collection.split(","):
+                        if "input_" + col.replace("[", "").replace("]", "").replace('"', "") == history_data[c]['name']:
+                            data_ids.append(history_data[c]['id'])
                 gi.histories.create_dataset_collection(
                     history_id, make_collection(data_ids))
             gi.workflows.run_workflow(
@@ -2165,11 +2170,13 @@ def upload(request):
                     'server'
                 )})
         else:
-            if makecol == "true":
+            if collection != "[]":
                 history_data = gi.histories.show_history(
                     history_id, contents=True)
                 for c in range(0, len(history_data)):
-                    data_ids.append(history_data[c]['id'])
+                    for col in collection.split(","):
+                        if "input_" + col.replace("[", "").replace("]", "").replace('"', "") == history_data[c]['name']:
+                            data_ids.append(history_data[c]['id'])
                 gi.histories.create_dataset_collection(
                     history_id, make_collection(data_ids))
             ug_store_results(
@@ -2258,7 +2265,6 @@ def store_results(column, gi, datafiles, server, username, password, storage,
         studies = json.loads(json_studies)
         for s in range(0, len(studies["data"])):
             study_name = studies["data"][s]["attributes"]["title"]
-            print(study_name, groups)
             if study_name in groups:
                 studyid = studies["data"][s]["id"]
                 study_title = study_name
@@ -2557,10 +2563,10 @@ def show_results(request):
     storage = request.session.get('storage')
     inputs = {}
     out = {}
-    result = ""
+    # result = ""
     workflow = []
-    resid = 0
-    wf = False
+    # resid = 0
+    # wf = False
     wid = "0"
     if request.method == 'POST':
         request.session['stored_results'] = request.POST
@@ -2568,12 +2574,11 @@ def show_results(request):
     else:
         if username is not None:
             old_post = request.session.get('stored_results')
-            investigations = old_post['investigations']
-            group = old_post['group']
+            # investigations = old_post['investigations[]']
+            group = old_post['group[]']
             group = group.split(',')
-            resultid = old_post['resultid']
+            resultid = old_post['resultid[]']
             if request.session.get('storage_type') == "SEEK":
-                resultid = resultid.replace('"', '').strip("[").strip("]")
                 if "\\" in resultid:
                     resultid = resultid[:-2]
                 results = get_seek_result(storage, resultid)
@@ -2599,102 +2604,11 @@ def show_results(request):
                         ).communicate()[0].decode()
                         json_data_files = json.loads(data_files)
                         if rname == (json_data_files["data"]
-                                     ["attributes"]["title"]):
+                                    ["attributes"]["title"]):
                             wid = (json_data_files["data"]
-                                   ["attributes"]["description"])
+                                ["attributes"]["description"])
                     else:
                         out[rid] = rname
-                    myplots = {}
-                    for outputid, outputname in out.items():
-                        if ".ga" not in outputname:
-                            format = "None"
-                            if format == "tabular":
-                                call(
-                                    [
-                                        "wget", storage + "/data_files/" + outputid + "/download?version=1", "-O", username + "/" + outputname
-                                    ])
-                                filename = username + "/" + outputname
-                                values = []
-                                pielabels = []
-                                with open(filename) as data_file_test:
-                                    headers = data_file_test.readline().split('\t')
-                                    if len(headers) > 1:
-                                        for line in data_file_test:
-                                            line = line.strip('\n')
-                                            values.append(line.split('\t'))
-                                            pielabels.append(
-                                                line.split('\t')[-1])
-                                        uniquepielabels = list(set(pielabels))
-                                        sortedvalues = sorted(pielabels)
-                                        pievalues = [
-                                            len(list(group)) for key, group in groupby(sortedvalues)]
-                                        # colors = ['#21317f', '#e7f3ff']
-                                        colors = []
-
-                                        def r(): return random.randint(200, 255)
-                                        for dummyx in range(len(uniquepielabels)):
-                                            colors.append(
-                                                ('#%02X%02X%02X' % (r(), r(), r())))
-                                        pietrace = go.Pie(
-                                            labels=uniquepielabels,
-                                            values=pievalues,
-                                            hoverinfo='label+percent',
-                                            textinfo='value',
-                                            textfont=dict(size=20),
-                                            marker=dict(colors=colors,
-                                                        line=dict(color='#000000', width=2)))
-                                        trace = go.Table(
-                                            columnorder=list(
-                                                range(len(headers))),
-                                            header=dict(
-                                                values=headers,
-                                                fill=dict(color='#21317f'),
-                                                align=['center'] * 5,
-                                                font=dict(color='white', size=14)),
-                                            cells=dict(
-                                                values=list(
-                                                    map(list, zip(*values))),
-                                                fill=dict(color='#e7f3ff'),
-                                                align=['center'] * 5,
-                                                font=dict(color='#21317f', size=14)))
-                                        cmd = ['xrandr']
-                                        cmd2 = ['grep', '*']
-                                        p = subprocess.Popen(
-                                            cmd, stdout=subprocess.PIPE)
-                                        p2 = subprocess.Popen(
-                                            cmd2, stdin=p.stdout, stdout=subprocess.PIPE)
-                                        p.stdout.close()
-                                        try:
-                                            resolution_string, dummyjunk = p2.communicate()
-                                            resolution = resolution_string.split()[
-                                                0].decode()
-                                            width, dummyheight = resolution.split(
-                                                'x')
-                                        except IndexError:
-                                            width, dummyheight = [1920, 1080]
-                                        layout = dict(
-                                            width=int(width)-500,
-                                            height=500,
-                                            paper_bgcolor='rgba(0,0,0,0)',
-                                            plot_bgcolor='rgba(0,0,0,0)'
-                                        )
-                                        data = [trace]
-                                        piedata = [pietrace]
-                                        fig = go.Figure(
-                                            data=data, layout=layout)
-                                        piefig = go.Figure(
-                                            data=piedata, layout=layout)
-                                        config = {
-                                            "showLink": False,
-                                            "displaylogo": False,
-                                            'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                                        }
-                                        # fig = dict(data=data, layout=layout)
-                                        myplots[outputname] = (plotly.offline.plot(
-                                            fig, output_type='div', config=config))
-                                        myplots["pie_" + outputname] = (plotly.offline.plot(
-                                            piefig, output_type='div', config=config))
-                                call(["rm " + username + "/\"" + outputname + "\""], shell=True)
                 return render(request, 'results.html', context={
                     'storagetype': request.session.get('storage_type'),
                     'inputs': inputs,
@@ -2702,8 +2616,7 @@ def show_results(request):
                     'workflow': workflow,
                     'storage': storage,
                     'resultid': resultid,
-                    'workflowid': wid,
-                    'plots': myplots})
+                    'workflowid': wid})
         else:
             return HttpResponseRedirect(reverse('index'))
 
@@ -2785,7 +2698,6 @@ def get_seek_result(storage, assay):
     Returns:
         A Dictionary with data IDs and titles.
     """
-    # assay = assay.strip("[").strip("]")
     get_assays_cmd = ("curl -X GET \"" + storage +
                       "\"/assays -H \"accept: application/json\"")
     all_assays = subprocess.Popen(
