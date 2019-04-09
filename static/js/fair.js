@@ -3,6 +3,27 @@
 ** It also sends some important data to views.py to be able to 
 ** upload data to Galaxy.
 */
+function toggleSelect(source) {
+    checkboxes = document.getElementsByName('select');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        if (checkboxes[i].checked){
+            checkboxes[i].checked = false;
+        } else {
+            checkboxes[i].checked = true;
+        }
+        
+    }
+}
+function toggleCollection(source) {
+    checkboxes = document.getElementsByName('collection');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        if (checkboxes[i].checked){
+            checkboxes[i].checked = false;
+        } else {
+            checkboxes[i].checked = true;
+        }
+    }
+}
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
@@ -339,7 +360,11 @@ function fillTable(result) {
     var hasResult = false;
     var table = '<thead><tr>'
     table += '<th>select file</th>'
-    table += '<th>collection</th>'
+    if (result.head.vars.indexOf("result_assay") === -1) {
+        table += '<th>collection</th>';
+    } else {
+        table += '<th style="width:1px;"></th>';
+    }
     result.head.vars.forEach(function (entry) {
         if (entry.indexOf("URI") === -1) {
             table += '<th><a>' + entry + '</a></th>'
@@ -389,8 +414,14 @@ function fillTable(result) {
                             displayName.split('/')[3] + '/' +
                             displayName.split('/')[4]
                         )
-                        table += '<td><input type="checkbox" name="collection" id="check_' + rownr +
-                            '" value="' + rownr + '"><label for="check_' + rownr + '"></label></td>';
+                        if (result.head.vars.indexOf("result_assay") === -1) {
+                            table += '<td><input type="checkbox" name="collection" id="check_' + rownr +
+                                '" value="' + rownr + '"><label for="check_' + rownr + '"></label></td>';
+                        } else {
+                            table += '<td></td>';
+                        }
+                        // table += '<td><input type="checkbox" name="collection" id="check_' + rownr +
+                        //     '" value="' + rownr + '"><label for="check_' + rownr + '"></label></td>';
                         table += '<td><span><a target="_blank" href="' +
                             displayName + '">' + displayName +
                             '</a></span></td>';

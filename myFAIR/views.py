@@ -28,12 +28,6 @@ from itertools import groupby
 from datetime import datetime, timedelta
 from pytz import timezone
 
-# Testing some Galaxy imports
-# from bioblend.galaxy.histories import HistoryClient
-# from bioblend.galaxy.tools import ToolClient
-# from bioblend.galaxy.workflows import WorkflowClient
-# from bioblend.galaxy.datasets import DatasetClient
-
 
 @csrf_exempt
 def login(request):
@@ -859,10 +853,6 @@ def get_galaxy_info(url, email, password):
         a list of available dbkeys.
     """
     gusername = ""
-    # gi = GalaxyInstance(
-    #     url=url,
-    #     email=email,
-    #     password=password)
     gi = getGalaxyInstance(url, email, password)
     user = gi.users.get_current_user()
     gusername = user['username']
@@ -2044,6 +2034,8 @@ def upload(request):
     sendmeta = request.POST.get('sendmeta')
     makecol = request.POST.get('col')
     data_ids = []
+    data_ids_fwd = []
+    data_ids_rev = []
     control = request.POST.get('samples')
     test = request.POST.get('samplesb')
     new_hist = request.POST.get('historyname')
@@ -2127,14 +2119,25 @@ def upload(request):
                         datamap[v] = {'src': "hda", 'id': did}
                 in_count += 1
             if collection != "[]":
+                names = []
                 history_data = gi.histories.show_history(
                     history_id, contents=True)
                 for c in range(0, len(history_data)):
                     for col in collection.split(","):
+                        name = col.replace("[", "").replace("]", "").replace('"', "").replace(".fastq", "").replace("_R1", "").replace("_R2", "")
+                        if name not in names:
+                            names.append(name)
                         if "input_" + col.replace("[", "").replace("]", "").replace('"', "") == history_data[c]['name']:
-                            data_ids.append(history_data[c]['id'])
-                gi.histories.create_dataset_collection(
-                    history_id, make_collection(data_ids))
+                            if "_R1.fastq" in history_data[c]['name'] and history_data[c]['id'] not in data_ids_fwd:
+                                data_ids_fwd.append(history_data[c]['id'])
+                            elif "_R2.fastq" in history_data[c]['name'] and history_data[c]['id'] not in data_ids_rev:
+                                data_ids_rev.append(history_data[c]['id'])
+                            else:
+                                data_ids.append(history_data[c]['id'])
+                if data_ids_fwd and data_ids_rev:
+                    make_paired_collection(gi, history_id, data_ids_fwd, data_ids_rev, names)
+                elif data_ids:
+                    make_collection(gi, history_id, data_ids)
             gi.workflows.run_workflow(
                 workflowid, datamap, history_id=history_id)
             gi.workflows.export_workflow_to_local_path(
@@ -2171,14 +2174,25 @@ def upload(request):
                 )})
         else:
             if collection != "[]":
+                names = []
                 history_data = gi.histories.show_history(
                     history_id, contents=True)
                 for c in range(0, len(history_data)):
                     for col in collection.split(","):
+                        name = col.replace("[", "").replace("]", "").replace('"', "").replace(".fastq", "").replace("_R1", "").replace("_R2", "")
+                        if name not in names:
+                            names.append(name)
                         if "input_" + col.replace("[", "").replace("]", "").replace('"', "") == history_data[c]['name']:
-                            data_ids.append(history_data[c]['id'])
-                gi.histories.create_dataset_collection(
-                    history_id, make_collection(data_ids))
+                            if "_R1.fastq" in history_data[c]['name'] and history_data[c]['id'] not in data_ids_fwd:
+                                data_ids_fwd.append(history_data[c]['id'])
+                            elif "_R2.fastq" in history_data[c]['name'] and history_data[c]['id'] not in data_ids_rev:
+                                data_ids_rev.append(history_data[c]['id'])
+                            else:
+                                data_ids.append(history_data[c]['id'])
+                if data_ids_fwd and data_ids_rev:
+                    make_paired_collection(gi, history_id, data_ids_fwd, data_ids_rev, names)
+                elif data_ids:
+                    make_collection(gi, history_id, data_ids)
             ug_store_results(
                 gi,
                 request.session.get('galaxyemail'),
@@ -2193,31 +2207,64 @@ def upload(request):
             return HttpResponseRedirect(reverse("index"))
 
 
-def make_collection(data_ids):
-    """Create a dataset collection in Galaxy
-
+def make_collection(gi, history_id, data_ids):
+    """Create a new data collection in a Galaxy history.
+    
     Arguments:
-        data_ids: A list of Galaxy dataset IDs
-
-    Returns:
-        A dictionary of the Galaxy data collection.
+        gi: Galaxy Instance.
+        history_id: Galaxy history id.
+        data_ids: Data ids that will be added to the collection.
     """
     idlist = []
-    count = 0
     for c in range(0, len(data_ids)):
         data_id = data_ids[c]
         idlist.append({
             'src': "hda",
             'id': data_id,
-            'name': str(count)
+            'name': 'reverse_' + str(c)
         })
-        count += 1
     collection = {
         'collection_type': 'list',
         'element_identifiers': idlist,
         'name': 'collection'
     }
-    return collection
+    gi.histories.create_dataset_collection(history_id, collection)
+
+
+def make_paired_collection(gi, history_id, data_ids_fwd, data_ids_rev, names):
+    """Create a paired dataset list in Galaxy.
+    
+    Arguments:
+        gi: Galaxy Instance.
+        history_id: Galaxy history id.
+        data_ids_fwd: Data ids unpaired forward.
+        data_ids_rev: Data ids unpaired reversed.
+        names: Sample names linked to the unpaired data ids.
+    """
+    count = 0
+    for c in range(0, len(data_ids_fwd)):
+        idlist = []
+        pairs = []
+        data_id_fwd = data_ids_fwd[c]
+        data_id_rev = data_ids_rev[c]
+        idlist.append({
+            'src': "hda",
+            'id': data_id_fwd,
+            'name': 'forward'
+        })
+        idlist.append({
+            'src': "hda",
+            'id': data_id_rev,
+            'name': 'reverse'
+        })
+        pairs = {
+            'collection_type': 'paired',
+            'element_identifiers': idlist,
+            'name': names[count]
+        }
+        count += 1
+        gi.histories.create_dataset_collection(history_id, pairs)
+    gi.histories.update_dataset_collection()
 
 
 def store_results(column, gi, datafiles, server, username, password, storage,
@@ -2563,10 +2610,7 @@ def show_results(request):
     storage = request.session.get('storage')
     inputs = {}
     out = {}
-    # result = ""
     workflow = []
-    # resid = 0
-    # wf = False
     wid = "0"
     if request.method == 'POST':
         request.session['stored_results'] = request.POST
